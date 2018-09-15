@@ -53,6 +53,7 @@ function playSequence(handles)
     while i < handles.nbFrames && handles.isPlaying
 %         handles = guidata(gcf);
         
+        set(handles.guiComponents.timestampText, 'String', sprintf('%d', handles.M(i, 1)));
         q = handles.M(i, 2:end);
         q = q/norm(q);
 

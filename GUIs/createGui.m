@@ -12,6 +12,7 @@ guiComponents.a = axes('Parent', guiComponents.f, ...
 view(3);
 grid on;
 cameratoolbar;
-guiComponents.playPauseButton = uicontrol('Style', 'togglebutton', 'String', 'Play', 'Callback', playPauseCallback);
+guiComponents.playPauseButton = uicontrol('Style', 'togglebutton', 'String', 'Play', 'Position', [0 0 100 20], 'Callback', playPauseCallback);
+guiComponents.timestampText = uicontrol('Style', 'text', 'String', '', 'Position', [0 20 100 20]);
 
 end
