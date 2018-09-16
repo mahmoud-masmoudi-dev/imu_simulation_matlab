@@ -2,7 +2,10 @@ function simulateCsvRecord( csvFile )
 %simulateCsvRecord Simulate the movement of an IMU
 
     %% Create GUI
-    guiComponents = createGui(@playPauseCallback);
+    callbacksMap.playPauseCallback = @playPauseCallback;
+    callbacksMap.sliderCallback = @sliderCallback;
+    guiComponents = createGui(callbacksMap);
+    set(guiComponents.slider, 'Min', 1, 'Max', 10, 'Value', 1);
 
     %% Create the identity frame (that corresponds to the identity quaternion)
     % and customize its graphics
@@ -25,6 +28,10 @@ function simulateCsvRecord( csvFile )
     handles.nbFrames = size(handles.M, 1);
     handles.currentFrame = 1;
     handles.guiComponents = guiComponents;
+    
+    set(handles.guiComponents.slider, ...
+        'Max', handles.nbFrames, ...
+        'SliderStep', [1/handles.nbFrames 10/handles.nbFrames]);
 
     guidata(gcf, handles);
 
@@ -47,36 +54,69 @@ function playPauseCallback(hObject, event)
     guidata(gcf, handles);
 end
 
+function sliderCallback(hObject, event)
+% hObject    handle to pushbutton1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+
+    handles = guidata(gcf);
+    % Get the frame number by rounding the slider value
+    % Re-adjust sliderValue to this frameNumber and update the frame
+    % graphics
+    frameNumber = round(get(hObject, 'Value'));
+    set(hObject, 'Value', frameNumber);
+    updateFrame(handles, frameNumber);
+    
+    guidata(gcf, handles);
+end
+
 function playSequence(handles)
     % sequence : Nx4 matrix where N is the total number of frames
     i = handles.currentFrame;
-    while i < handles.nbFrames && handles.isPlaying
-%         handles = guidata(gcf);
+    set(handles.guiComponents.slider, 'Enable', 'off');
+    
+    while i <= handles.nbFrames && handles.isPlaying
+        % Update the frame graphics
+        updateFrame(handles, i);
         
-        set(handles.guiComponents.timestampText, 'String', sprintf('%d', handles.M(i, 1)));
-        q = handles.M(i, 2:end);
-        q = q/norm(q);
-
-        % Rotate the frame
-        rotateFrame(handles.guiComponents.identityFrame, handles.guiComponents.imuFrame, q);
-        % Rotate the rectangle sticked to the imuFrame
-        rotateRectangle(handles.guiComponents.identityRectangle, handles.guiComponents.imuRectangle, q);
-
-        pause(0.25);
+        % Refresh graphics at the same rate as given by the timestamps
+        if(i == handles.nbFrames)
+            drawnow;
+        else
+            pause((handles.M(i+1, 1)-handles.M(i, 1))/1000);
+        end
         i = i + 1;
         
         % Stop playing, update the playPauseButton and rewind at the end of
         % the sequence
-        if i == handles.nbFrames
+        if i > handles.nbFrames
             resetSequence(handles);
         end
         
         guidata(gcf, handles);
     end
+    
+    set(handles.guiComponents.slider, 'Enable', 'on');
 end
 
 function resetSequence(handles)
     set(handles.guiComponents.playPauseButton, 'String', 'Play');
+    set(handles.guiComponents.playPauseButton, 'Value', 0);
     handles.isPlaying = 0;
+end
+
+function updateFrame(handles, i)
+    set(handles.guiComponents.timestampText, 'String', sprintf('%d', handles.M(i, 1)));
+    set(handles.guiComponents.frameText, 'String', sprintf('%d/%d', i, handles.nbFrames));
+
+    q = handles.M(i, 2:end);
+    q = q/norm(q);
+
+    % Rotate the frame
+    rotateFrame(handles.guiComponents.identityFrame, handles.guiComponents.imuFrame, q);
+    % Rotate the rectangle sticked to the imuFrame
+    rotateRectangle(handles.guiComponents.identityRectangle, handles.guiComponents.imuRectangle, q);
+    
+    % Update slider
+    set(handles.guiComponents.slider, 'Value', i);
 end
 
