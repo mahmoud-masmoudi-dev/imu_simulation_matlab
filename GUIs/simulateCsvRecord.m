@@ -32,9 +32,39 @@ function simulateCsvRecord( csvFile )
     set(handles.guiComponents.slider, ...
         'Max', handles.nbFrames, ...
         'SliderStep', [1/handles.nbFrames 10/handles.nbFrames]);
+    
+    handles.frameNotifier = ImuEventNotifier();
+    addlistener(handles.frameNotifier, 'FrameDisplayed', @testCallback);
 
     guidata(gcf, handles);
+end
 
+function notifyMe(handles)
+    frameNotifier = ImuEventNotifier();
+    addlistener(frameNotifier, 'FrameDisplayed', @testCallback);
+    frameNotifier.notifyForFrameDisplayed(handles);
+end
+
+function testCallback(src, eventData)
+
+    handles = guidata(eventData.handles.guiComponents.f);
+    disp(handles.currentFrame)
+    
+    updateFrame(handles, handles.currentFrame);
+    pause((handles.M(handles.currentFrame+1, 1)-handles.M(handles.currentFrame, 1))/1000);
+    
+    handles.currentFrame = handles.currentFrame+1;
+    
+    guidata(gcf, handles);
+    if(get(handles.guiComponents.playPauseButton, 'Value') == 1)
+        notifyMe(handles);
+    else
+        disp('non');
+    end
+    
+    
+    
+%     disp('bye');
 end
 
 function playPauseCallback(hObject, event)
@@ -45,13 +75,13 @@ function playPauseCallback(hObject, event)
     if(get(hObject, 'Value') == 1)
         set(hObject, 'String', 'Pause');
         handles.isPlaying = 1;
-        playSequence(handles);
+        set(0, 'RecursionLimit', 2000)
+        notifyMe(handles);
+%         playSequence(handles);
     else
         set(hObject, 'String', 'Play');
         handles.isPlaying = 0;
     end
-    
-    guidata(gcf, handles);
 end
 
 function sliderCallback(hObject, event)
