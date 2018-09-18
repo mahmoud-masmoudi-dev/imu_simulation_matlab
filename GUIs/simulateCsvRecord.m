@@ -23,10 +23,9 @@ function simulateCsvRecord( csvFile )
     set(guiComponents.imuRectangle, 'Visible', 'on');
 
     %% Initialization
-    handles.isPlaying = 0;
     handles.M = csvread(csvFile);
     handles.nbFrames = size(handles.M, 1);
-    handles.currentFrame = 1;
+    handles.frameNumber = 1;
     handles.guiComponents = guiComponents;
     
     set(handles.guiComponents.slider, ...
@@ -46,41 +45,43 @@ function notifyMe(handles)
 end
 
 function testCallback(src, eventData)
-
-    handles = guidata(eventData.handles.guiComponents.f);
-    disp(handles.currentFrame)
+    handles = guidata(gcf);
     
-    updateFrame(handles, handles.currentFrame);
-    pause((handles.M(handles.currentFrame+1, 1)-handles.M(handles.currentFrame, 1))/1000);
+    updateFrame(handles, handles.frameNumber);
     
-    handles.currentFrame = handles.currentFrame+1;
+    if(handles.frameNumber == size(handles.M, 1))
+        set(handles.guiComponents.playPauseButton, 'Value', 0);
+        set(handles.guiComponents.playPauseButton, 'String', 'Play');
+        
+        handles.frameNumber = 1;
+        set(handles.guiComponents.slider, 'Value', handles.frameNumber);
+        updateFrame(handles, handles.frameNumber);
+        guidata(gcf, handles);
+        return;
+    end
+    
+    pause((handles.M(handles.frameNumber+1, 1)-handles.M(handles.frameNumber, 1))/1000);
+    
+    handles.frameNumber = handles.frameNumber+1;
     
     guidata(gcf, handles);
     if(get(handles.guiComponents.playPauseButton, 'Value') == 1)
         notifyMe(handles);
-    else
-        disp('non');
     end
-    
-    
-    
-%     disp('bye');
 end
 
 function playPauseCallback(hObject, event)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 
-    handles = guidata(gcf);
+    handles = guidata(hObject);
     if(get(hObject, 'Value') == 1)
         set(hObject, 'String', 'Pause');
-        handles.isPlaying = 1;
         set(0, 'RecursionLimit', 2000)
         notifyMe(handles);
 %         playSequence(handles);
     else
         set(hObject, 'String', 'Play');
-        handles.isPlaying = 0;
     end
 end
 
@@ -96,15 +97,17 @@ function sliderCallback(hObject, event)
     set(hObject, 'Value', frameNumber);
     updateFrame(handles, frameNumber);
     
+    handles.frameNumber = frameNumber;
+    
     guidata(gcf, handles);
 end
 
 function playSequence(handles)
     % sequence : Nx4 matrix where N is the total number of frames
-    i = handles.currentFrame;
+    i = handles.frameNumber;
     set(handles.guiComponents.slider, 'Enable', 'off');
     
-    while i <= handles.nbFrames && handles.isPlaying
+    while i <= handles.nbFrames
         % Update the frame graphics
         updateFrame(handles, i);
         
@@ -131,7 +134,6 @@ end
 function resetSequence(handles)
     set(handles.guiComponents.playPauseButton, 'String', 'Play');
     set(handles.guiComponents.playPauseButton, 'Value', 0);
-    handles.isPlaying = 0;
 end
 
 function updateFrame(handles, i)
