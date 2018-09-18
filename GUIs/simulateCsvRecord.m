@@ -77,7 +77,7 @@ function playPauseCallback(hObject, event)
     handles = guidata(hObject);
     if(get(hObject, 'Value') == 1)
         set(hObject, 'String', 'Pause');
-        set(0, 'RecursionLimit', 2000)
+        set(0, 'RecursionLimit', handles.nbFrames + 1)
         notifyMe(handles);
 %         playSequence(handles);
     else
