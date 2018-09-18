@@ -4,6 +4,7 @@ function simulateCsvRecord( csvFile )
     %% Create GUI
     callbacksMap.playPauseCallback = @playPauseCallback;
     callbacksMap.sliderCallback = @sliderCallback;
+    callbacksMap.checkboxCallback = @checkboxCallback;
     guiComponents = createGui(callbacksMap);
     set(guiComponents.slider, 'Min', 1, 'Max', 10, 'Value', 1);
 
@@ -21,6 +22,11 @@ function simulateCsvRecord( csvFile )
     guiComponents.imuFrame = createFrame(guiComponents.a);
     guiComponents.imuRectangle = copyobj(guiComponents.identityRectangle, guiComponents.a);
     set(guiComponents.imuRectangle, 'Visible', 'on');
+    
+    %% Create the tracing points
+    guiComponents.tracingPoints = line('Parent', gca, ...
+        'LineStyle', 'none', 'Marker', '.', 'Color', 'magenta', ...
+        'XData', [], 'YData', [], 'ZData', [], 'Visible', 'off');
 
     %% Initialization
     handles.M = csvread(csvFile);
@@ -102,6 +108,15 @@ function sliderCallback(hObject, event)
     guidata(gcf, handles);
 end
 
+function checkboxCallback(hObject, event)
+    handles = guidata(gcf);
+    if(get(hObject, 'Value') == 1)
+        set(handles.guiComponents.tracingPoints, 'Visible', 'on');
+    else
+        set(handles.guiComponents.tracingPoints, 'Visible', 'off');
+    end
+end
+
 function playSequence(handles)
     % sequence : Nx4 matrix where N is the total number of frames
     i = handles.frameNumber;
@@ -147,6 +162,20 @@ function updateFrame(handles, i)
     rotateFrame(handles.guiComponents.identityFrame, handles.guiComponents.imuFrame, q);
     % Rotate the rectangle sticked to the imuFrame
     rotateRectangle(handles.guiComponents.identityRectangle, handles.guiComponents.imuRectangle, q);
+    
+    % Tracing points
+    xData = get(handles.guiComponents.tracingPoints, 'XData');
+    yData = get(handles.guiComponents.tracingPoints, 'YData');
+    zData = get(handles.guiComponents.tracingPoints, 'ZData');
+    pointX = get(handles.guiComponents.imuFrame.y, 'XData');
+    pointY = get(handles.guiComponents.imuFrame.y, 'YData');
+    pointZ = get(handles.guiComponents.imuFrame.y, 'ZData');
+    xData(end+1) = pointX(2);
+    yData(end+1) = pointY(2);
+    zData(end+1) = pointZ(2);
+    set(handles.guiComponents.tracingPoints, 'XData', xData);
+    set(handles.guiComponents.tracingPoints, 'YData', yData);
+    set(handles.guiComponents.tracingPoints, 'ZData', zData);
     
     % Update slider
     set(handles.guiComponents.slider, 'Value', i);
