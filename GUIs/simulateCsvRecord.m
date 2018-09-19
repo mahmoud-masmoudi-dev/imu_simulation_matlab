@@ -5,6 +5,7 @@ function simulateCsvRecord( csvFile )
     callbacksMap.playPauseCallback = @playPauseCallback;
     callbacksMap.sliderCallback = @sliderCallback;
     callbacksMap.checkboxCallback = @checkboxCallback;
+    callbacksMap.clearTracingButtonCallback = @clearTracingButtonCallback;
     guiComponents = createGui(callbacksMap);
     title = get(guiComponents.a, 'Title');
     set(title, 'String', csvFile);
@@ -85,7 +86,7 @@ function playPauseCallback(hObject, event)
     handles = guidata(hObject);
     if(get(hObject, 'Value') == 1)
         set(hObject, 'String', 'Pause');
-        set(0, 'RecursionLimit', handles.nbFrames + 1)
+        set(0, 'RecursionLimit', handles.nbFrames + 1);        
         notifyMe(handles);
 %         playSequence(handles);
     else
@@ -117,6 +118,13 @@ function checkboxCallback(hObject, event)
     else
         set(handles.guiComponents.tracingPoints, 'Visible', 'off');
     end
+end
+
+function clearTracingButtonCallback(src, event)
+    handles = guidata(gcf);
+    set(handles.guiComponents.tracingPoints, 'XData', []);
+    set(handles.guiComponents.tracingPoints, 'YData', []);
+    set(handles.guiComponents.tracingPoints, 'ZData', []);
 end
 
 function playSequence(handles)
