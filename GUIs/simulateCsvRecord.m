@@ -6,9 +6,8 @@ function simulateCsvRecord( csvFile )
     callbacksMap.sliderCallback = @sliderCallback;
     callbacksMap.checkboxCallback = @checkboxCallback;
     callbacksMap.clearTracingButtonCallback = @clearTracingButtonCallback;
+    callbacksMap.exportTracingButtonCallback = @exportTracingButtonCallback;
     guiComponents = createGui(callbacksMap);
-    title = get(guiComponents.a, 'Title');
-    set(title, 'String', csvFile);
     set(guiComponents.slider, 'Min', 1, 'Max', 10, 'Value', 1);
 
     %% Create the identity frame (that corresponds to the identity quaternion)
@@ -35,11 +34,18 @@ function simulateCsvRecord( csvFile )
     handles.M = csvread(csvFile);
     handles.nbFrames = size(handles.M, 1);
     handles.frameNumber = 1;
+    % Create title based on file name
+    handles.title = strsplit(csvFile, '/');
+    handles.title = handles.title{2};
+    handles.title = strsplit(handles.title, '.');
+    handles.title = handles.title{1};
     handles.guiComponents = guiComponents;
     
     set(handles.guiComponents.slider, ...
         'Max', handles.nbFrames, ...
         'SliderStep', [1/handles.nbFrames 10/handles.nbFrames]);
+    title = get(guiComponents.a, 'Title');
+    set(title, 'String', handles.title);
     
     handles.frameNotifier = ImuEventNotifier();
     addlistener(handles.frameNotifier, 'FrameDisplayed', @testCallback);
@@ -125,6 +131,18 @@ function clearTracingButtonCallback(src, event)
     set(handles.guiComponents.tracingPoints, 'XData', []);
     set(handles.guiComponents.tracingPoints, 'YData', []);
     set(handles.guiComponents.tracingPoints, 'ZData', []);
+end
+
+function exportTracingButtonCallback(src, event)
+    handles = guidata(gcf);
+    xData = get(handles.guiComponents.tracingPoints, 'XData');
+    yData = get(handles.guiComponents.tracingPoints, 'YData');
+    zData = get(handles.guiComponents.tracingPoints, 'ZData');
+    tracing.xData = xData;
+    tracing.yData = yData;
+    tracing.zData = zData;
+    
+    save(sprintf('tracings/%s.mat', handles.title), 'tracing');
 end
 
 function playSequence(handles)

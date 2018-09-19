@@ -28,5 +28,6 @@ guiComponents.slider = uicontrol('Style', 'slider', 'Position', [100 0 windowWid
 % Create the tracing points checkbox
 guiComponents.tracingPointsCheckbox = uicontrol('Style', 'checkbox', 'String', 'Tracing points', 'Position', [0 windowHeight-20 100 20], 'Callback', callbacksMap.checkboxCallback);
 guiComponents.tracingPointsClearButton = uicontrol('Style', 'pushbutton', 'String', 'Clear tracing', 'Position', [0 windowHeight-40 100 20], 'Callback', callbacksMap.clearTracingButtonCallback);
+guiComponents.tracingPointsExportButton = uicontrol('Style', 'pushbutton', 'String', 'Export tracing', 'Position', [0 windowHeight-60 100 20], 'Callback', callbacksMap.exportTracingButtonCallback);
 
 end
