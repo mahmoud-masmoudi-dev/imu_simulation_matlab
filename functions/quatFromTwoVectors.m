@@ -5,13 +5,21 @@ function [ quat ] = quatFromTwoVectors( startVect, endVect )
 cosAngle = dot(startVect, endVect)/(norm(startVect)*norm(endVect));
 sinAngle = norm(cross(startVect, endVect))/(norm(startVect)*norm(endVect));
 
-if(sinAngle >= 0)
+if cosAngle > 1
+    angle = 0;
+elseif cosAngle < -1
+    angle = pi;
+elseif(sinAngle >= 0)
     angle = acos(cosAngle);
 else
     angle = -acos(cosAngle);
 end
 
-quat = quatFromAngleAndAxis(angle, cross(startVect, endVect));
+if angle == 0
+    quat = [1; 0; 0; 0];
+else
+    quat = quatFromAngleAndAxis(angle, cross(startVect, endVect));
+end
 
 
 end
