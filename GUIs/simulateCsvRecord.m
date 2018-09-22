@@ -29,11 +29,24 @@ function simulateCsvRecord( csvFile )
     guiComponents.tracingPoints = line('Parent', gca, ...
         'LineStyle', 'none', 'Marker', '.', 'Color', 'magenta', ...
         'XData', [], 'YData', [], 'ZData', [], 'Visible', 'off');
+    
+    %% Create the stamping points
+    guiComponents.stampingPoints = line('Parent', gca, ...
+        'LineStyle', 'none', 'Marker', '.', 'Color', 'red', ...
+        'XData', [], 'YData', [], 'ZData', [], 'Visible', 'on');
 
     %% Initialization
     handles.M = csvread(csvFile);
     handles.nbFrames = size(handles.M, 1);
     handles.frameNumber = 1;
+    
+    % For plane stamping
+    handles.cumulativeQ = [1; 0; 0; 0];
+    handles.cumulativeT = [0; 0; 0];
+    handles.chunkDataSize = 2; % Stamp by chunks of this value
+    handles.chunkData = NaN(3, handles.chunkDataSize);
+    handles.chunkDataIndex = 1;
+    
     % Create title based on file name
     handles.title = strsplit(csvFile, '/');
     handles.title = handles.title{2};
@@ -62,7 +75,7 @@ end
 function testCallback(src, eventData)
     handles = guidata(gcf);
     
-    updateFrame(handles, handles.frameNumber);
+    handles = updateFrame(handles, handles.frameNumber);
     
     if(handles.frameNumber == size(handles.M, 1))
         set(handles.guiComponents.playPauseButton, 'Value', 0);
@@ -70,7 +83,7 @@ function testCallback(src, eventData)
         
         handles.frameNumber = 1;
         set(handles.guiComponents.slider, 'Value', handles.frameNumber);
-        updateFrame(handles, handles.frameNumber);
+        handles = updateFrame(handles, handles.frameNumber);
         guidata(gcf, handles);
         return;
     end
@@ -110,7 +123,7 @@ function sliderCallback(hObject, event)
     % graphics
     frameNumber = round(get(hObject, 'Value'));
     set(hObject, 'Value', frameNumber);
-    updateFrame(handles, frameNumber);
+    handles = updateFrame(handles, frameNumber);
     
     handles.frameNumber = frameNumber;
     
@@ -152,7 +165,7 @@ function playSequence(handles)
     
     while i <= handles.nbFrames
         % Update the frame graphics
-        updateFrame(handles, i);
+        handles = updateFrame(handles, i);
         
         % Refresh graphics at the same rate as given by the timestamps
         if(i == handles.nbFrames)
@@ -179,7 +192,7 @@ function resetSequence(handles)
     set(handles.guiComponents.playPauseButton, 'Value', 0);
 end
 
-function updateFrame(handles, i)
+function handles = updateFrame(handles, i)
     set(handles.guiComponents.timestampText, 'String', sprintf('%d', handles.M(i, 1)));
     set(handles.guiComponents.frameText, 'String', sprintf('%d/%d', i, handles.nbFrames));
 
@@ -206,6 +219,28 @@ function updateFrame(handles, i)
         set(handles.guiComponents.tracingPoints, 'XData', xData);
         set(handles.guiComponents.tracingPoints, 'YData', yData);
         set(handles.guiComponents.tracingPoints, 'ZData', zData);
+        
+        % For stamping
+        handles.chunkData(:, handles.chunkDataIndex) = [pointX(2);pointY(2);pointZ(2)];
+        if handles.chunkDataIndex == handles.chunkDataSize
+            handles.chunkDataIndex = 1;
+            [temp, handles.cumulativeQ, handles.cumulativeT] = stampSphericalDataInitialized(handles.chunkData, handles.cumulativeQ, handles.cumulativeT);
+            xData = get(handles.guiComponents.stampingPoints, 'XData');
+            yData = get(handles.guiComponents.stampingPoints, 'YData');
+            zData = get(handles.guiComponents.stampingPoints, 'ZData');
+            
+            chunkData = [temp; ones(1, size(temp, 2))];
+            
+            xData = [xData chunkData(1, :)];
+            yData = [yData chunkData(2, :)];
+            zData = [zData chunkData(3, :)];
+            set(handles.guiComponents.stampingPoints, 'XData', xData);
+            set(handles.guiComponents.stampingPoints, 'YData', yData);
+            set(handles.guiComponents.stampingPoints, 'ZData', zData);
+        else
+            handles.chunkDataIndex = handles.chunkDataIndex+1;
+        end
+        
     end
     
     % Update slider
